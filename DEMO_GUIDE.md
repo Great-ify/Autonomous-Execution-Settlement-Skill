@@ -1,0 +1,19 @@
+# AESS Demo Guide
+
+This guide describes how to run and interpret the AESS system demonstration.
+
+## Execution
+Run the system end-to-end:
+```bash
+npx tsx src/utils/demoRunner.ts
+```
+
+## Demo Flow Explained
+1. **Agreement Initiation**: The runner generates a sample agreement with predefined rules.
+2. **Evidence Submission**: Pre-configured evidence is submitted for analysis.
+3. **AI-Powered Analysis**: The `AIJudge` service invokes Gemini to perform constraint verification.
+4. **Risk Heuristic**: The `RiskEngine` calculates reliability and quality scores.
+5. **Settlement**: Upon successful verification, the `SettlementEngine` calls the deployed smart contract.
+6. **Blockchain Confirmation**: The demo verifies the on-chain transaction receipt.
+
+*Ensure your `.env` contains a valid `GEMINI_API_KEY` to run the AI components.*
