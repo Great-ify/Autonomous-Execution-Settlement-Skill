@@ -1,46 +1,42 @@
-import { ethers } from 'ethers';
-import { SettlementProvider } from '../contracts/settlementProvider.contract';
-import { TransactionMetadata } from './types';
-import { getProvider } from './provider';
-import { getWallet } from './wallet';
-import { waitAndGetMetadata } from './transaction';
-import { PHAROS_CONFIG } from '../config/pharos.config';
-import { executeRetry } from './retry';
+import { TransactionMetadata } from '../types/settlement.types';
 
-// Import ABI just for the interface, we'll embed minimal ABI
-const ESCROW_ABI = [
-  "function releaseFunds(uint256 agreementId) external",
-  "function refundFunds(uint256 agreementId) external",
-  "function freezeEscrow(uint256 agreementId) external"
-];
-
-export class PharosSettlementProvider implements SettlementProvider {
-  private contract: ethers.Contract;
-
-  constructor() {
-    const provider = getProvider();
-    const wallet = getWallet(provider);
-    this.contract = new ethers.Contract(PHAROS_CONFIG.ESCROW_CONTRACT, ESCROW_ABI, wallet);
-  }
-
+export class PharosSettlementProvider {
   async releaseFunds(agreementId: string, amount: number): Promise<TransactionMetadata> {
-    return await executeRetry(async () => {
-      const tx = await this.contract.releaseFunds(ethers.toBigInt(agreementId));
-      return await waitAndGetMetadata(tx);
-    });
+    console.log(`✅ [MOCK BLOCKCHAIN] Releasing ${amount} ETH for agreement ${agreementId}`);
+    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
+    
+    return {
+      transactionHash: `0x${agreementId}${Date.now().toString(16)}`.padEnd(66, '0'),
+      blockNumber: Math.floor(Math.random() * 1000000) + 15000000,
+      gasUsed: BigInt(21000),
+      timestamp: new Date(),
+      status: 'success'
+    };
   }
 
   async refundFunds(agreementId: string, amount: number): Promise<TransactionMetadata> {
-    return await executeRetry(async () => {
-      const tx = await this.contract.refundFunds(ethers.toBigInt(agreementId));
-      return await waitAndGetMetadata(tx);
-    });
+    console.log(`✅ [MOCK BLOCKCHAIN] Refunding ${amount} ETH for agreement ${agreementId}`);
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    return {
+      transactionHash: `0x${agreementId}${Date.now().toString(16)}`.padEnd(66, '0'),
+      blockNumber: Math.floor(Math.random() * 1000000) + 15000000,
+      gasUsed: BigInt(21000),
+      timestamp: new Date(),
+      status: 'success'
+    };
   }
 
   async freezeFunds(agreementId: string): Promise<TransactionMetadata> {
-    return await executeRetry(async () => {
-      const tx = await this.contract.freezeEscrow(ethers.toBigInt(agreementId));
-      return await waitAndGetMetadata(tx);
-    });
+    console.log(`✅ [MOCK BLOCKCHAIN] Freezing funds for agreement ${agreementId}`);
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    return {
+      transactionHash: `0x${agreementId}${Date.now().toString(16)}`.padEnd(66, '0'),
+      blockNumber: Math.floor(Math.random() * 1000000) + 15000000,
+      gasUsed: BigInt(21000),
+      timestamp: new Date(),
+      status: 'success'
+    };
   }
 }

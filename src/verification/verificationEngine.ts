@@ -3,7 +3,8 @@ import { VerificationResult, VerificationMethod, RiskFlag } from '../types/verif
 import { evaluateRequirements } from './requirementEvaluator';
 import { assessEvidenceQuality } from './evidenceQualityEngine';
 import { analyzeCoverage } from './coverageAnalyzer';
-import { judgeWithAI } from './aiJudge';
+
+import { judgeWithAI } from './aiJudge.mock';
 import { challengeSubmission } from './aiChallenger';
 import { arbitrate } from './verificationArbitrator';
 import { generateRiskFlags } from './riskFlagGenerator';
