@@ -1,49 +1,59 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-
-// ── Mocks ──────────────────────────────────────────────────────────────────
+//Mocks 
 // All collaborators are mocked so this is a true unit test of orchestrator
 // logic — no file I/O, no real blockchain calls.
-
-const mockReleaseFunds = vi.fn();
-const mockRefundFunds  = vi.fn();
-const mockFreezeFunds  = vi.fn();
+//
+// vi.mock(...) factories are hoisted above all other module code (including
+// top-level `const` declarations), so any mock fn referenced inside a factory
+// must itself be created inside vi.hoisted() — otherwise it throws
+// "Cannot access '...' before initialization" at import time.
+const {
+  mockReleaseFunds,
+  mockRefundFunds,
+  mockFreezeFunds,
+  mockIsProcessed,
+  mockMarkProcessed,
+  mockFindByAgreementId,
+  mockSettlementCreate,
+  mockPublishEvent,
+} = vi.hoisted(() => ({
+  mockReleaseFunds:      vi.fn(),
+  mockRefundFunds:       vi.fn(),
+  mockFreezeFunds:       vi.fn(),
+  mockIsProcessed:       vi.fn(),
+  mockMarkProcessed:     vi.fn(),
+  mockFindByAgreementId: vi.fn(),
+  mockSettlementCreate:  vi.fn(),
+  mockPublishEvent:      vi.fn(),
+}));
 
 vi.mock('../blockchain/pharosSettlementProvider', () => ({
-  PharosSettlementProvider: vi.fn().mockImplementation(() => ({
-    releaseFunds: mockReleaseFunds,
-    refundFunds:  mockRefundFunds,
-    freezeFunds:  mockFreezeFunds,
-  })),
+  PharosSettlementProvider: class {
+    releaseFunds = mockReleaseFunds;
+    refundFunds  = mockRefundFunds;
+    freezeFunds  = mockFreezeFunds;
+  },
 }));
-
-const mockIsProcessed    = vi.fn();
-const mockMarkProcessed  = vi.fn();
 
 vi.mock('../services/settlementIdempotency.service', () => ({
-  SettlementIdempotencyService: vi.fn().mockImplementation(() => ({
-    isProcessed:   mockIsProcessed,
-    markProcessed: mockMarkProcessed,
-  })),
+  SettlementIdempotencyService: class {
+    isProcessed   = mockIsProcessed;
+    markProcessed = mockMarkProcessed;
+  },
 }));
-
-const mockFindByAgreementId = vi.fn();
 
 vi.mock('../repositories/escrow.repository', () => ({
-  FileEscrowRepository: vi.fn().mockImplementation(() => ({
-    findByAgreementId: mockFindByAgreementId,
-  })),
+  FileEscrowRepository: class {
+    findByAgreementId = mockFindByAgreementId;
+  },
 }));
-
-const mockSettlementCreate = vi.fn();
 
 vi.mock('../repositories/settlement.repository', () => ({
-  FileSettlementRepository: vi.fn().mockImplementation(() => ({
-    create: mockSettlementCreate,
-    update: vi.fn(),
-  })),
+  FileSettlementRepository: class {
+    create = mockSettlementCreate;
+    update = vi.fn();
+  },
 }));
-
-const mockPublishEvent = vi.fn();
 
 vi.mock('../events/eventBus', () => ({
   publishEvent: mockPublishEvent,
