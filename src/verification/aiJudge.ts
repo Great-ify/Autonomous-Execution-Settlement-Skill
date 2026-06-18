@@ -2,16 +2,113 @@ import { StructuredAIAnalysis } from "../types/verification.types";
 import { ai } from "../utils/gemini";
 import { Type } from "@google/genai";
 
-// Rotate through these available free models to handle intermittent 503s
-// const MODELS = ["gemini-flash-latest", "gemini-1.5-flash", "gemini-1.5-pro"];
-// Use only models supported in your environment
-const MODELS = ["gemini-flash-latest"];
+// Model priority 
+const MODELS = [
+  "gemini-1.5-pro",      // Most capable
+  "gemini-pro",          // Stable
+  "gemini-1.5-flash",    // Fast
+  "gemini-flash-latest"  // Fastest
+];
+
 const TIMEOUT_MS = 60_000;
-// Increased retries to allow for more rotation attempts
-const MAX_RETRIES = 5;
+const MAX_RETRIES = 6; // Try all models at least once
 
 /**
- * Judges a work submission against an agreement using Gemini.
+ * Rule-based fallback judge 
+ */
+function ruleBasedJudge(agreement: any, submission: any): StructuredAIAnalysis {
+  console.log("⚙️ Using rule-based fallback judgment");
+
+  const requirements: { id: string; description: string }[] = Array.isArray(
+    agreement.requirements
+  )
+    ? agreement.requirements
+    : [];
+
+  const items = submission?.items ?? submission?.payload?.items ?? [];
+  const evidenceItems = Array.isArray(items) ? items : [];
+
+  // Check 1: All requirements have matching evidence
+  const requirementsCovered = requirements.every(req =>
+    evidenceItems.some(ev => ev.requirementId === req.id)
+  );
+
+  // Check 2: All evidence has integrity hashes
+  const hasHashes = evidenceItems.length > 0 && evidenceItems.every(
+    ev => ev.hash && ev.hash.length > 0
+  );
+
+  // Check 3: All evidence has references
+  const hasReferences = evidenceItems.length > 0 && evidenceItems.every(
+    ev => ev.artifactReference && ev.artifactReference.length > 0
+  );
+
+  // Check 4: Evidence descriptions are meaningful
+  const hasDescriptions = evidenceItems.length > 0 && evidenceItems.every(
+    ev => ev.description && ev.description.length > 20
+  );
+
+  // Scoring
+  let score = 0;
+  const findings: string[] = [];
+  const strengths: string[] = [];
+  const weaknesses: string[] = [];
+
+  // Requirement coverage (40 points)
+  if (requirementsCovered) {
+    score += 0.4;
+    strengths.push("All requirements have matching evidence submitted");
+  } else {
+    weaknesses.push("Some requirements lack corresponding evidence");
+  }
+
+  // Evidence integrity (30 points)
+  if (hasHashes) {
+    score += 0.3;
+    strengths.push("All evidence includes cryptographic integrity hashes");
+  } else {
+    weaknesses.push("Evidence missing integrity verification hashes");
+  }
+
+  // Evidence references (20 points)
+  if (hasReferences) {
+    score += 0.2;
+    strengths.push("All evidence includes artifact references for verification");
+  } else {
+    weaknesses.push("Some evidence lacks artifact references");
+  }
+
+  // Evidence quality (10 points)
+  if (hasDescriptions) {
+    score += 0.1;
+    strengths.push("Evidence includes detailed descriptions");
+  } else {
+    weaknesses.push("Evidence descriptions are too brief or missing");
+  }
+
+  // Generate findings
+  requirements.forEach(req => {
+    const evidence = evidenceItems.find(ev => ev.requirementId === req.id);
+    if (evidence) {
+      findings.push(
+        `Requirement ${req.id}: Evidence provided (${evidence.evidenceType})`
+      );
+    } else {
+      findings.push(`Requirement ${req.id}: No evidence found`);
+    }
+  });
+
+  return {
+    score: Math.min(1, Math.max(0, score)),
+    confidence: 0.75, // Rule-based has good but not perfect confidence
+    findings: findings.length > 0 ? findings : ["No requirements to verify"],
+    strengths: strengths.length > 0 ? strengths : ["Evidence submitted"],
+    weaknesses: weaknesses.length > 0 ? weaknesses : ["None identified"],
+  };
+}
+
+/**
+ * Main AI judge with automatic fallback to rules
  */
 export const judgeWithAI = async (
   agreement: any,
@@ -67,12 +164,11 @@ Be concise. Each finding should be one sentence. Return ONLY the JSON object —
 
   let lastError: Error | undefined;
 
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
-      // Cycle to the next model in the array based on attempt number
       const modelToUse = MODELS[attempt % MODELS.length];
 
-      console.log(`Attempt ${attempt + 1}: Using model ${modelToUse}`);
+      console.log(`🤖 Attempt ${attempt + 1}: Using model ${modelToUse}`);
 
       const response = await withTimeout(
         ai.models.generateContent({
@@ -131,17 +227,34 @@ Be concise. Each finding should be one sentence. Return ONLY the JSON object —
       parsed.score = clamp(parsed.score, 0, 1);
       parsed.confidence = clamp(parsed.confidence, 0, 1);
 
+      console.log(`✅ AI judgment successful with ${modelToUse}`);
       return parsed;
+
     } catch (err: any) {
       lastError = err;
 
+      const errorMessage = err?.message || String(err);
+      
+      // Check if error is retryable
       const isRetryable =
-        err?.message?.includes("503") ||
-        err?.message?.includes("timeout") ||
-        err?.message?.includes("overloaded") ||
+        errorMessage.includes("503") ||
+        errorMessage.includes("429") ||
+        errorMessage.includes("timeout") ||
+        errorMessage.includes("overloaded") ||
+        errorMessage.includes("UNAVAILABLE") ||
+        errorMessage.includes("quota") ||
         err?.name === "AbortError";
 
-      if (!isRetryable || attempt === MAX_RETRIES) break;
+      console.warn(
+        `⚠️  Model ${MODELS[attempt % MODELS.length]} failed: ${errorMessage}`
+      );
+
+      // If not retryable or we've exhausted attempts, fall back to rules
+      if (!isRetryable || attempt === MAX_RETRIES - 1) {
+        console.warn("❌ All AI models failed or exhausted attempts");
+        console.log("🔄 Falling back to rule-based judgment");
+        return ruleBasedJudge(agreement, submission);
+      }
 
       // Exponential backoff with jitter
       const baseDelay = 2000;
@@ -150,8 +263,8 @@ Be concise. Each finding should be one sentence. Return ONLY the JSON object —
         15000,
       );
 
-      console.warn(
-        `Gemini API Error. Retrying in ${Math.round(delay)}ms... (Attempt ${
+      console.log(
+        `⏳ Retrying in ${Math.round(delay)}ms... (Attempt ${
           attempt + 1
         }/${MAX_RETRIES})`,
       );
@@ -159,11 +272,9 @@ Be concise. Each finding should be one sentence. Return ONLY the JSON object —
     }
   }
 
-  throw new Error(
-    `AI Judge failed after ${MAX_RETRIES + 1} attempt(s): ${
-      lastError?.message
-    }`,
-  );
+  // Final fallback (should rarely reach here)
+  console.error("❌ All AI attempts failed, using rule-based fallback");
+  return ruleBasedJudge(agreement, submission);
 };
 
 // ─── Internal helpers ─────────────────────────────────────────────────────────

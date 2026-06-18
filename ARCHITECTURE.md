@@ -6,6 +6,73 @@ Provide autonomous verification and trustless settlement for digital agreements.
 
 ---
 
+## System architecture
+
+┌─────────────────────────────────────────────────────────┐
+│                    AESS Architecture                     │
+└─────────────────────────────────────────────────────────┘
+
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│  Agreement   │────▶│   Escrow     │────▶│  Settlement  │
+│   Service    │     │   Service    │     │ Orchestrator │
+└──────────────┘     └──────────────┘     └──────────────┘
+        │                    │                     │
+        ▼                    ▼                     ▼
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│  Execution   │────▶│ Verification │────▶│  Blockchain  │
+│   Service    │     │   Engine     │     │   Provider   │
+└──────────────┘     └──────────────┘     └──────────────┘
+                            │
+                  ┌─────────┴─────────┐
+                  ▼                   ▼
+          ┌──────────────┐    ┌──────────────┐
+          │   AI Judge   │    │  Rule Engine │
+          │ (Gemini AI)  │    │  (Fallback)  │
+          └──────────────┘    └──────────────┘
+
+
+## Directory Structure
+
+src/
+├── blockchain/              # Smart contract interaction
+│   ├── pharosSettlementProvider.ts  # Main settlement logic
+│   ├── provider.ts          # RPC connection
+│   ├── wallet.ts            # Wallet management
+│   └── transactionUtils.ts  # TX helpers
+│
+├── services/                # Business logic layer
+│   ├── agreement.service.ts    # Agreement CRUD
+│   ├── execution.service.ts    # Work submission
+│   ├── verification.service.ts # Verification orchestration
+│   └── settlement.service.ts   # Settlement records
+│
+├── verification/            # Multi-layer verification
+│   ├── aiJudge.ts           # Gemini AI with fallback
+│   ├── verificationEngine.ts # Orchestration
+│   ├── requirementEvaluator.ts
+│   ├── evidenceQualityEngine.ts
+│   └── coverageAnalyzer.ts
+│
+├── settlement/              # Settlement logic
+│   └── orchestrator.ts      # Settlement state machine
+│
+├── state-machine/           # Agreement FSM
+│   ├── agreementState.ts    # State definitions
+│   ├── transitions.ts       # Allowed transitions
+│   └── guards.ts            # Transition validators
+│
+├── repositories/            # Data persistence
+│   ├── agreement.repository.ts
+│   ├── escrow.repository.ts
+│   └── settlement.repository.ts
+│
+└── types/                   # TypeScript definitions
+    ├── agreement.types.ts
+    ├── escrow.types.ts
+    ├── verification.types.ts
+    └── settlement.types.ts
+
+
 ## Core Components
 
 ### Agreement Service
@@ -31,7 +98,7 @@ Outputs:
 * Pass/fail status
 * Requirement-level scoring
 
-### Gemini AI Judge
+### AI Judge
 
 Performs contextual assessment of submissions.
 
@@ -97,44 +164,111 @@ Features:
 * Reentrancy protection
 * Authorized settlement execution
 
----
 
-## End-to-End Flow
 
-Agreement Created
-↓
-Evidence Submitted
-↓
-Rule Verification
-↓
-Evidence Verification
-↓
-Gemini Evaluation
-↓
-Risk Assessment
-↓
-Decision Generation
-↓
-Settlement Authorization
-↓
-Pharos Transaction
-↓
-Confirmation
-↓
-Settlement Complete
+## 🔐 Security Features
+1. Cryptographic Integrity
+SHA-256 Hashing: All evidence is cryptographically hashed
+Tamper Detection: Any modification invalidates hashes
+Audit Trail: Complete verification history preserved
 
----
+2. Smart Contract Security
+OpenZeppelin Standards: Using battle-tested libraries
+Reentrancy Guards: Prevents reentrancy attacks
+Access Control: Only authorized settlement engine can release funds
+State Validation: Strict FSM prevents invalid transitions
 
-## Security Measures
+3. Multi-Layer Verification
+text
 
-* ReentrancyGuard
-* Transaction confirmation thresholds
-* Retry mechanisms
-* Timeout protection
-* Structured AI outputs
-* Environment-based secret management
+Rule-Based Check ────┐
+                     │
+AI Verification ─────┼──▶ Arbitration ──▶ Final Decision
+                     │
+Coverage Analysis ───┘
 
----
+4. Fail-Safe Mechanisms
+AI Fallback: If Gemini fails, automatic rule-based verification
+Idempotency: Prevents double-settlements
+Time-locks: Optional delay for dispute windows
+Multi-sig: Support for multi-party authorization
+🎓 How It Works: Deep Dive
+State Machine Flow
+text
+
+CREATED ──fund──▶ FUNDED ──activate──▶ ACTIVE
+                                          │
+                                    submit │
+                                          ▼
+                                     SUBMITTED
+                                          │
+                                    review │
+                                          ▼
+                                    UNDER_REVIEW
+                                    ┌─────┴─────┐
+                              verify│           │dispute
+                                    ▼           ▼
+                               COMPLETED    DISPUTED
+                                              │
+                                    ┌─────────┴─────────┐
+                              resolve│               cancel│
+                                    ▼                   ▼
+                               COMPLETED           CANCELLED
+
+
+## Verification Algorithm
+
+// Pseudocode
+function verify(agreement, submission) {
+  // Step 1: Rule-based checks
+  const ruleScore = evaluateRequirements(agreement, submission);
+  
+  // Step 2: Evidence quality
+  const evidenceScore = assessEvidenceQuality(submission);
+  
+  // Step 3: Coverage analysis
+  const coverage = analyzeCoverage(agreement.requirements, submission);
+  
+  // Step 4: AI judgment (with fallback)
+  let aiScore;
+  try {
+    aiScore = await judgeWithGemini(agreement, submission);
+  } catch (error) {
+    aiScore = ruleBasedJudge(agreement, submission); // Fallback
+  }
+  
+  // Step 5: Arbitration
+  const finalScore = arbitrate(ruleScore, evidenceScore, aiScore, coverage);
+  
+  // Step 6: Decision
+  return decide(finalScore, THRESHOLD = 70);
+}
+Settlement Process
+TypeScript
+
+// Simplified settlement flow
+async function settle(agreementId, decision) {
+  // 1. Load escrow
+  const escrow = await getEscrow(agreementId);
+  
+  // 2. Validate state
+  if (escrow.status !== 'FUNDED') throw new Error('Not fundable');
+  
+  // 3. Convert agreement ID to blockchain format
+  const agreementIdHash = keccak256(agreementId);
+  
+  // 4. Call smart contract
+  if (decision === 'APPROVED') {
+    await contract.releaseFunds(agreementIdHash);
+  } else {
+    await contract.refundFunds(agreementIdHash);
+  }
+  
+  // 5. Record settlement
+  await recordSettlement(agreementId, txHash);
+}
+
+
 
 ## Blockchain Deployment
 

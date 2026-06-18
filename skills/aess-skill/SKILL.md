@@ -1,12 +1,45 @@
 # AESS — Autonomous Escrow Settlement Skill
 
-**What this system does:** AESS enables two AI agents to agree on a task, lock payment in a smart contract, verify work using Gemini AI, and settle funds on-chain — all without a human approving anything.
+## Overview
+The Autonomous Execution and Settlement Skill (AESS)** is a blockchain-powered escrow and verification system that enables AI agents to autonomously manage agreements, verify work completion, and execute settlements on-chain.
 
----
+
+
+## 🎯 What This Skill Does
+
+1. **Agreement Creation** - Create verifiable work agreements with requirements
+2. **Escrow Management** - Lock funds on-chain in secure escrow contracts
+3. **Work Verification** - AI-powered verification using Gemini with rule-based fallback
+4. **Automated Settlement** - Release or refund funds based on verification results
+5. **Audit Trail** - Complete cryptographic integrity tracking
+
+
+
+##  Installation
+
+### Method 1: NPX (Recommended)
+
+```bash
+npx skills add https://github.com/Great-ify/Autonomous-Execution-Settlement-Skill
+
+
+Method 2: Manual Install
+
+
+# Clone the repository
+git clone https://github.com/Great-ify/Autonomous-Execution-Settlement-Skill.git
+cd Autonomous-Execution-Settlement-Skill
+
+# Install dependencies
+npm install
+
+# Build the project
+npm run build
+
+```
 
 ## System architecture
 
-```
 [Payer Agent] ──creates──► Agreement
                               │
                          [Escrow Contract]  ◄── 0.5 ETH locked
@@ -25,20 +58,26 @@
                                                 │
                                    Pharos Contract (chain 688689)
                               releaseFunds / refundFunds / freezeEscrow
-```
 
----
+
 
 ## Setup
 
-### Environment variables
+### Required Environment variables
 
-```env
-GEMINI_API_KEY=your_key_here
-PHAROS_RPC_URL=https://rpc.pharos.network
+```Create a .env file in the project root:
+
+# Gemini AI Configuration
+GEMINI_API_KEY=your_gemini_api_key_here
+
+# Pharos Blockchain Configuration
+PHAROS_RPC_URL=https://atlantic.dplabs-internal.com
 PHAROS_CHAIN_ID=688689
-PHAROS_PRIVATE_KEY=0x...
+PHAROS_PRIVATE_KEY=0x_your_private_key_here
 PHAROS_ESCROW_CONTRACT=0x3cEb0760C7F2bd58B1D2A60813112CFC42E9D9e4
+
+# Optional: Specify different worker wallet
+WORKER_WALLET_ADDRESS=0x_worker_address_here
 ```
 
 ### Install and run
@@ -47,24 +86,9 @@ PHAROS_ESCROW_CONTRACT=0x3cEb0760C7F2bd58B1D2A60813112CFC42E9D9e4
 npm install
 npm run dev           # API server on port 3000
 npm run test          # Run test suite
-npx tsx src/utils/demoRunner.ts   # Full E2E demo (requires .env)
+npm  run demo   # Full E2E demo (requires .env)
 ```
 
----
-
-## Running the demo
-
-`demoRunner.ts` executes the full real pipeline in sequence:
-
-1. Creates an agreement via `agreement.service.ts`
-2. Seeds a funded escrow record into the file store
-3. Submits a 3-artifact evidence manifest
-4. Calls `processSubmission` — triggers rule engine + Gemini AI judge + risk engine
-5. Calls `orchestrateSettlement` — broadcasts to Pharos if env is configured
-
-If blockchain env vars are missing, the demo still runs the full verification pipeline and skips only the on-chain step, logging a clear warning.
-
----
 
 ## Key source files
 
@@ -88,7 +112,7 @@ If blockchain env vars are missing, the demo still runs the full verification pi
 ### Modifying the AI judge
 
 Edit `src/verification/aiJudge.ts`. Key constraints:
-- Model must be `gemini-1.5-flash` or `gemini-2.0-flash` (not `gemini-3.5-flash` — doesn't exist)
+- Model must be `gemini-1.5-flash` or `gemini-2.0-flash`
 - Always use `responseMimeType: 'application/json'` with a `responseSchema` — the codebase depends on structured output
 - Keep the timeout (15 seconds) and retry logic (up to 2 retries) intact
 - Return type must satisfy `StructuredAIAnalysis`: `{ score, confidence, findings, strengths, weaknesses }`
@@ -150,10 +174,33 @@ The `StandardDecisionPolicy` in `decisionPolicy.ts` then maps:
 ```bash
 npm run test          # Must pass before any PR
 npm run build         # Must succeed for all backend changes
-npx tsx src/utils/demoRunner.ts   # Must complete without errors
+npm run demo   # Must complete without errors
 ```
 
----
+ ## Testing
+Run Tests
+```bash
+
+# Unit tests
+npm test
+
+# Contract tests
+npm run test:contracts
+
+
+Manual Testing
+# 1. Check wallet
+npm run check:wallet
+
+# 2. Check balance
+npm run check:balance
+
+# 3. Run demo
+npm run demo
+
+# 4. Check escrow (use ID from demo)
+npm run check:escrow <agreementId>
+```
 
 ## Deployed contract
 

@@ -40,7 +40,7 @@ function divider() {
   console.log(`  ${dim("─".repeat(52))}`);
 }
 
-// ─── Demo scenario data ──────────────────────────────────────────────────────
+// Demo scenario data
 
 const SCENARIO = {
   payerAgent: "agent:payer:acme-corp",
@@ -116,7 +116,8 @@ async function runDemo() {
   log("💰", `Payment locked`, `${SCENARIO.paymentAmount} ETH`);
   log("📌", `Requirements`, `${SCENARIO.requirements.length} defined`);
 
-  // ── Step 2: Seed escrow record AND create on-chain ───────────────────────────────
+
+  // ── Step 2: Seed escrow record AND create on-chain 
   section("2 / 5  Escrow funding");
 
   const escrowRepo = new FileEscrowRepository();
@@ -133,22 +134,29 @@ async function runDemo() {
   // Create in local database
   await escrowRepo.create(escrow);
 
-  // 🔥 NEW: Create escrow on-chain
+  // Create escrow on-chain with dynamic worker address
   try {
     const { PharosSettlementProvider } = await import(
       "../blockchain/pharosSettlementProvider.js"
     );
+    const { getWallet } = await import("../blockchain/wallet.js");
+    const { getProvider } = await import("../blockchain/provider.js");
+
     const settlementProvider = new PharosSettlementProvider();
 
-    const WORKER_ADDRESS = "0x8586C9978C176a61816754038dE7B7C4Edda39b5";
+    //  Get worker address dynamically (uses your wallet for demo)
+    const provider = getProvider();
+    const wallet = getWallet(provider);
+    const workerAddress = process.env.WORKER_WALLET_ADDRESS || wallet.address;
 
     log("⏳", yellow("Creating escrow on Pharos blockchain..."));
-    log("   ", dim(`Worker address: ${WORKER_ADDRESS}`));
+    log("   ", dim(`Payer: ${wallet.address}`));
+    log("   ", dim(`Worker: ${workerAddress}`));
     log("   ", dim(`Amount: ${SCENARIO.paymentAmount} ETH`));
 
     await settlementProvider.createEscrow(
       agreement.id,
-      WORKER_ADDRESS,
+      workerAddress,
       SCENARIO.paymentAmount,
     );
     log("✅", green("Escrow created on-chain"));
@@ -159,7 +167,6 @@ async function runDemo() {
 
   log("✅", green("Escrow funded"), `escrowId: ${escrow.escrowId}`);
   log("🔒", "Funds locked in AESSEscrow contract");
-
   // ── Step 3: Submit evidence
   section("3 / 5  Evidence submission");
 

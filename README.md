@@ -27,7 +27,37 @@ On-chain escrow release
 2. `npm install`
 3. `npm run dev` (API lives on port 3000)
 4. `npm run test` (Verify core logic)
-5. `npx tsx src/utils/demoRunner.ts` (Trigger E2E flow)
+5. `npm run demo` (Trigger E2E flow)
+
+## How It Works
+
+┌─────────────┐
+│  Agreement  │  1. Create work agreement
+└──────┬──────┘
+       │
+┌──────▼──────┐
+│   Escrow    │  2. Lock funds on-chain
+└──────┬──────┘
+       │
+┌──────▼──────┐
+│  Execution  │  3. Submit work evidence
+└──────┬──────┘
+       │
+┌──────▼──────┐
+│   AI Judge  │  4. Verify with  AI
+└──────┬──────┘
+       │
+┌──────▼──────┐
+│ Settlement  │  5. Release/refund funds
+
+
+## Use Cases
+Freelance Work - Automated escrow for development tasks
+API Integration - Verify SDK delivery and quality
+Code Review - AI assessment of code submissions
+Bug Bounties - Automated verification and payment
+Agent-to-Agent Commerce - Autonomous B2B transactions
+
 
 ## Documentation Reference
 
@@ -36,7 +66,6 @@ On-chain escrow release
 - [Demo Guide](DEMO_GUIDE.md)
 - [Contract Information](contracts/ESCROW_README.md)
 
-## Developer Installation
+See [AESS Skill](/skills/aess-skill/SKILL.md) for detailed configuration and task-specific workflows. Ensure your environment is set up with all required API keys as detailed in the deployment guides.
 
 
-For developers and AI agents looking to extend AESS, utilize the [AESS Skill](/skills/aess-skill/SKILL.md) for detailed configuration and task-specific workflows. Ensure your environment is set up with all required API keys as detailed in the deployment guides.

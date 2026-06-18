@@ -87,7 +87,7 @@ export const orchestrateSettlement = async (agreementId: string, outcome: any): 
     throw error;
   }
 
-  // ── Success path ──────────────────────────────────────────────────────────
+  //  Success path 
   const settlement: any = {
     settlementId,
     agreementId,
