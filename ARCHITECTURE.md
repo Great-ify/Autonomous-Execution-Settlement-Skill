@@ -31,46 +31,6 @@ Provide autonomous verification and trustless settlement for digital agreements.
           └──────────────┘    └──────────────┘
 
 
-## Directory Structure
-
-src/
-├── blockchain/              # Smart contract interaction
-│   ├── pharosSettlementProvider.ts  # Main settlement logic
-│   ├── provider.ts          # RPC connection
-│   ├── wallet.ts            # Wallet management
-│   └── transactionUtils.ts  # TX helpers
-│
-├── services/                # Business logic layer
-│   ├── agreement.service.ts    # Agreement CRUD
-│   ├── execution.service.ts    # Work submission
-│   ├── verification.service.ts # Verification orchestration
-│   └── settlement.service.ts   # Settlement records
-│
-├── verification/            # Multi-layer verification
-│   ├── aiJudge.ts           # Gemini AI with fallback
-│   ├── verificationEngine.ts # Orchestration
-│   ├── requirementEvaluator.ts
-│   ├── evidenceQualityEngine.ts
-│   └── coverageAnalyzer.ts
-│
-├── settlement/              # Settlement logic
-│   └── orchestrator.ts      # Settlement state machine
-│
-├── state-machine/           # Agreement FSM
-│   ├── agreementState.ts    # State definitions
-│   ├── transitions.ts       # Allowed transitions
-│   └── guards.ts            # Transition validators
-│
-├── repositories/            # Data persistence
-│   ├── agreement.repository.ts
-│   ├── escrow.repository.ts
-│   └── settlement.repository.ts
-│
-└── types/                   # TypeScript definitions
-    ├── agreement.types.ts
-    ├── escrow.types.ts
-    ├── verification.types.ts
-    └── settlement.types.ts
 
 
 ## Core Components
