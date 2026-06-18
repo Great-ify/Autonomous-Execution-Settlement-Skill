@@ -1,0 +1,19 @@
+AESS Settlement Record
+=====================
+Date: Thu Jun 18 19:01:35 WCAST 2026
+Network: Pharos Atlantic Testnet (Chain ID: 688689)
+Contract: 0x3cEb0760C7F2bd58B1D2A60813112CFC42E9D9e4
+
+Agreement ID: vrchpi
+Worker Address: 0x8586C9978C176a61816754038dE7B7C4Edda39b5
+Amount: 0.5 ETH
+
+Transaction 1 (Escrow Creation):
+  Hash: 0x28d7eacf62dd08a4f53a8864d8b27c9979988bab2d8436a6b2a0274741ff57d6
+  Block: 24477318
+
+Transaction 2 (Funds Release):
+  Hash: 0xf167a1d09c82648e3108c3a961fee5b8ebb59103a943d45e1e7000551f3837fc
+  Block: 24477329
+
+Status: ✅ COMPLETED

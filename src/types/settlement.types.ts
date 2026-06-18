@@ -61,3 +61,11 @@ export interface SettlementFailure {
   reason: string;
   failedAt: Date;
 }
+
+export interface TransactionMetadata {
+  transactionHash: string;
+  blockNumber: number;
+  gasUsed: bigint;
+  timestamp: Date;
+  status: 'success' | 'failed';
+}
