@@ -6,10 +6,10 @@ import { FileSubmissionRepository } from '../repositories/submission.repository'
 import { updateAgreementState } from './agreement.service';
 import { AgreementState } from '../state-machine/agreementState';
 import { publishEvent } from '../events/eventBus';
+import { randomUUID } from 'crypto';
 
 // additional imports 
 import { assessRisk } from '../verification/riskEngine';
-import { ReputationService } from './reputationService';
 import { analyzeReliability } from '../verification/reliabilityAnalyzer';
 import { StandardDecisionPolicy } from '../verification/decisionPolicy';
 import { FileDecisionRecordRepository } from '../repositories/decisionRecord.repository';
@@ -21,7 +21,6 @@ const verificationRepo = new FileVerificationRepository();
 const agreementRepo = new FileAgreementRepository();
 const submissionRepo = new FileSubmissionRepository();
 const decisionRepo = new FileDecisionRecordRepository();
-const reputationService = new ReputationService();
 
 export const processSubmission = async (agreementId: string): Promise<VerificationResult | null> => {
   const agreement = await agreementRepo.findById(agreementId);
@@ -46,7 +45,7 @@ export const processSubmission = async (agreementId: string): Promise<Verificati
   const decision = StandardDecisionPolicy.decide(result, riskAssessment);
   
   await decisionRepo.create({
-    decisionId: Math.random().toString(36).substring(7),
+    decisionId: randomUUID(),
     verificationId: result.verificationId,
     riskAssessment,
     decisionOutcome: decision,

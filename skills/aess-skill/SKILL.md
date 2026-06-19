@@ -221,3 +221,31 @@ npm run demo    # Must complete without errors
 | Address | `0x3cEb0760C7F2bd58B1D2A60813112CFC42E9D9e4` |
 | Authorized caller | Settlement engine wallet (set at deploy time) |
 | Functions | `createEscrow`, `releaseFunds`, `refundFunds`, `freezeEscrow` |
+
+---
+
+## Reusability and Composability
+
+`runVerification` in `verificationEngine.ts` is a convenience orchestrator over five independent stages — it is not the only way to use AESS's verification logic. Most stages can be imported and called on their own, without pulling in the rest of the pipeline:
+
+| Standalone module | Function | Needs |
+|---|---|---|
+| `ruleEngine.ts` | `evaluateRequirements` | An agreement + submission shape |
+| `evidenceQualityEngine.ts` | `assessEvidenceQuality` | A submission payload |
+| `coverageAnalyzer.ts` | `analyzeCoverage` | Requirements list + submission |
+| `aiJudge.ts` | `judgeWithAI` | An agreement + submission (calls Gemini) |
+| `verification/quickRiskCheck.ts` | `quickRiskCheck` | Three numbers — no AESS objects at all |
+
+`quickRiskCheck` is the clearest example: the existing `assessRisk` in `riskEngine.ts` requires a full `VerificationResult`, `EvidenceQualityReport`, and `ArbitrationReport` — objects only the AESS pipeline produces. `quickRiskCheck` exposes the same scoring logic with a decoupled signature, so a completely different agent pipeline — one with its own evidence model, its own judge, or no AI judge at all — can still get a risk score:
+
+```typescript
+import { quickRiskCheck } from 'aess-skill/verification/quickRiskCheck';
+
+const risk = quickRiskCheck({
+  evidenceCoveragePercent: 65,
+  evidenceQualityScore: 80,
+});
+// → { overallRiskScore: 25, riskLevel: 'LOW', riskFactors: ['LOW_COVERAGE'], ... }
+```
+
+This is the model for composing other stages out of AESS: keep the rich, pipeline-aware version for agents already inside AESS, and expose a primitive-input version alongside it for agents that only need one piece of the logic.
