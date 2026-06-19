@@ -45,14 +45,31 @@ AI agents can complete tasks, but they can't independently verify work quality o
 │  Execution  │  3. Submit work evidence
 └──────┬──────┘
        │
-┌──────▼──────┐
-│   AI Judge  │  4. Verify with Gemini AI
-└──────┬──────┘
-       │
-┌──────▼──────┐
-│ Settlement  │  5. Release or refund funds
-└─────────────┘
+       ▼
+┌───────────────────────────────────────────┐
+│        4. Verification (multi-layer)      │
+│                                            │
+│   ┌─────────────┐     ┌─────────────┐     │
+│   │ Rule Engine │     │  AI Judge   │     │
+│   │ (coverage)  │     │  (Gemini)   │     │
+│   └──────┬──────┘     └──────┬──────┘     │
+│          │                   │            │
+│          │   if Gemini fails:│            │
+│          │   rule-based judge│            │
+│          │   takes over      │            │
+│          └─────────┬─────────┘            │
+│                     ▼                     │
+│            ┌──────────────┐               │
+│            │  Risk Engine │               │
+│            └──────┬───────┘               │
+└───────────────────┼────────────────────────┘
+                     │
+              ┌──────▼──────┐
+              │ Settlement  │  5. Release or refund funds
+              └─────────────┘
 ```
+
+Verification does not depend on the AI judge alone. The rule engine independently checks deterministic requirement coverage, and if Gemini is unavailable or fails, a rule-based judge takes over rather than blocking settlement. The risk engine combines both signals before a final decision is made.
 
 ## Use Cases
 
