@@ -14,7 +14,8 @@ This contract is designed to be interacted with via the `SettlementEngine` (`/sr
 ## Check On-Chain Data
 
 # View transaction on explorer
-https://explorer.pharos.network/tx/0x<your_tx_hash>
+https://atlantic.pharosscan.xyz/tx/0x<your_tx_hash>
+
 
 # Check contract
-https://explorer.pharos.network/address/0x3cEb0760C7F2bd58B1D2A60813112CFC42E9D9e4
+https://atlantic.pharosscan.xyz/address/0x3ceb0760c7f2bd58b1d2a60813112cfc42e9d9e4

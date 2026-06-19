@@ -25,13 +25,28 @@ This executes a complete end-to-end flow:
 │ 3. Evidence Submission   │  Submit work artifacts
 └────────┬────────────────┘
          │
-┌────────▼────────────────┐
-│ 4. AI Verification       │  AI judges quality
-└────────┬────────────────┘
-         │
-┌────────▼────────────────┐
-│ 5. On-Chain Settlement   │  Release funds to worker
-└─────────────────────────┘
+         ▼
+┌───────────────────────────────────────────┐
+│        4. Verification (multi-layer)      │
+│                                            │
+│   ┌─────────────┐     ┌─────────────┐     │
+│   │ Rule Engine │     │  AI Judge   │     │
+│   │ (coverage)  │     │  (Gemini)   │     │
+│   └──────┬──────┘     └──────┬──────┘     │
+│          │                   │            │
+│          │   if Gemini fails:│            │
+│          │   rule-based judge│            │
+│          │   takes over      │            │
+│          └─────────┬─────────┘            │
+│                     ▼                     │
+│            ┌──────────────┐               │
+│            │  Risk Engine │               │
+│            └──────┬───────┘               │
+└───────────────────┼────────────────────────┘
+                    │
+           ┌────────▼────────────────┐
+           │ 5. On-Chain Settlement  │  Release funds to worker
+           └─────────────────────────┘
 ```
 
 ---
